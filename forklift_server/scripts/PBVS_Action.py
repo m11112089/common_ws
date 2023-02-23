@@ -27,11 +27,16 @@ class Action():
         self.robot_2d_pose_x = 0.0
         self.robot_2d_pose_y = 0.0
         self.robot_2d_theta = 0.0
+        self.initial_robot_pose_x = 0.0
+        self.initial_robot_pose_y = 0.0
         # AprilTag_param
         self.is_marker_pose_received = False
         self.marker_2d_pose_x = 0.0
         self.marker_2d_pose_y = 0.0
         self.marker_2d_theta = 0.0
+        self.initial_marker_pose_x = 0.0
+        self.initial_marker_pose_y = 0.0
+        self.initial_marker_pose_theta = 0.0
         # Fork_param
         self.forwardbackpostion = 0.0
         self.updownposition = 0.0
@@ -243,18 +248,27 @@ class Action():
         self.SpinOnce()
         if self.is_triggered == False:
             self.is_triggered = True
-            self.initial_robot_pose_x = self.robot_2d_pose_x
-            self.initial_robot_pose_y = self.robot_2d_pose_y
+            self.initial_marker_pose_x = self.marker_2d_pose_x
+            self.initial_marker_pose_y = self.marker_2d_pose_y
         
-        dist = math.copysign(dead_reckoning_dist) * math.sqrt((self.initial_marker_pose_x - self.marker_2d_pose_x)**2 + (self.initial_marker_pose_y - self.marker_2d_pose_y)**2)
-        print("dist", dist)
-        if  dead_reckoning_dist - dist < 0.01 * math.copysign(dead_reckoning_dist):
-            self.cmd_vel.fnStop()
-            self.is_triggered = False
-            return True
-        else:
-            self.cmd_vel.fnGoStraight(dead_reckoning_dist - dist)
-            return False
+        dist = math.copysign(1, dead_reckoning_dist) * math.sqrt((self.initial_marker_pose_x - self.marker_2d_pose_x)**2 + (self.initial_marker_pose_y - self.marker_2d_pose_y)**2)
+        # print("dist", dist)
+        if math.copysign(1, dead_reckoning_dist) > 0.0:
+            if  dead_reckoning_dist - dist < 0.0:
+                self.cmd_vel.fnStop()
+                self.is_triggered = False
+                return True
+            else:
+                self.cmd_vel.fnGoStraight(-(dead_reckoning_dist - dist))
+                return False
+        elif math.copysign(1, dead_reckoning_dist) < 0.0:
+            if  dead_reckoning_dist - dist > 0.0:
+                self.cmd_vel.fnStop()
+                self.is_triggered = False
+                return True
+            else:
+                self.cmd_vel.fnGoStraight(-(dead_reckoning_dist - dist))
+                return False
 
     def fnCalcDistPoints(self, x1, x2, y1, y2):
         return math.sqrt((x1 - x2) ** 2. + (y1 - y2) ** 2.)
