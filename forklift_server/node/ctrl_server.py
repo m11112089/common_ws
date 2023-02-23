@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 import rospy
 import actionlib
@@ -13,12 +13,44 @@ def PBVS_client(msg):
     client.wait_for_result()
     return client.get_result()
 
+def TopologyMap_client(msg):
+    client = actionlib.SimpleActionClient('TopologyMap', forklift_server.msg.TopologyMapAction)
+    client.wait_for_server()
+    goal = forklift_server.msg.TopologyMapGoal(goal=msg)
+    print("send ", goal)
+    client.send_goal(goal)
+    client.wait_for_result()
+    return client.get_result()
+
 if __name__ == '__main__':
     rospy.init_node('ctrl_server')
-    command = ["parking_up", "up", "down"]
+
+    command =[
+        ['TopologyMap', 'v17'],
+        ['PBVS', 'parking_down'], 
+        ['PBVS', 'up'], 
+        ['TopologyMap', 'v23'],
+        ['PBVS', 'parking_up'],
+        ['PBVS', 'down'],
+        ['TopologyMap', 'v17'],
+        ['PBVS', 'parking_down'], 
+        ['PBVS', 'up'], 
+        ['TopologyMap', 'v23'],
+        ['PBVS', 'parking_up'],
+        ['PBVS', 'down']
+    ]
+
     for msg in command:
-        print("send ", msg)
-        result = PBVS_client(msg)
-        print("result ", result)
+        rospy.sleep(1)
+        if(msg[0] == 'PBVS'):
+            print("send PBVS: ", msg[1])
+            result = PBVS_client(msg[1])
+            print("result ", result)
+        elif(msg[0] == 'TopologyMap'):
+            print("send TopologyMap: ", msg[1])
+            result = TopologyMap_client(msg[1])
+            print("result ", result)
+
+
   
     

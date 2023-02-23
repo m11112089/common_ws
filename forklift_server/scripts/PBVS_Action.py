@@ -35,7 +35,7 @@ class Action():
         # Fork_param
         self.forwardbackpostion = 0.0
         self.updownposition = 0.0
-        self.fork_threshold = 0.015
+        self.fork_threshold = 0.005
         # other
         self.check_wait_time = 0
         self.is_triggered = False
@@ -232,26 +232,28 @@ class Action():
             self.check_wait_time =0
             return False
 
-    # def fnSeqdecide(self, decide_dist):#decide_dist偏離多少公分要後退
-    #     self.dist = abs(self.marker_2d_pose_x*math.cos((np.pi/2)-abs(self.marker_2d_theta)))
-    #     if  self.dist < decide_dist:
-    #         return True
-    #     else:
-    #         return False
+    def fnSeqdecide(self, decide_dist):#decide_dist偏離多少公分要後退
+        self.dist = self.marker_2d_pose_y
+        if  self.dist < decide_dist:
+            return True
+        else:
+            return False
 
     def fnseqdead_reckoning(self, dead_reckoning_dist):
         self.SpinOnce()
         if self.is_triggered == False:
             self.is_triggered = True
-            self.initial_marker_pose_x = self.marker_2d_pose_x 
-        dist = abs(self.initial_marker_pose_x - self.marker_2d_pose_x)
+            self.initial_robot_pose_x = self.robot_2d_pose_x
+            self.initial_robot_pose_y = self.robot_2d_pose_y
+        
+        dist = math.copysign(dead_reckoning_dist) * math.sqrt((self.initial_marker_pose_x - self.marker_2d_pose_x)**2 + (self.initial_marker_pose_y - self.marker_2d_pose_y)**2)
         print("dist", dist)
-        if dist > dead_reckoning_dist:
+        if  dead_reckoning_dist - dist < 0.01 * math.copysign(dead_reckoning_dist):
             self.cmd_vel.fnStop()
             self.is_triggered = False
             return True
         else:
-            self.cmd_vel.fnGoStraight(dist-self.initial_marker_pose_x)
+            self.cmd_vel.fnGoStraight(dead_reckoning_dist - dist)
             return False
 
     def fnCalcDistPoints(self, x1, x2, y1, y2):
@@ -327,7 +329,7 @@ class cmd_vel():
 
     def fnGoBack(self):
         twist = Twist()
-        twist.linear.x = -0.12
+        twist.linear.x = -0.1
         twist.linear.y = 0
         twist.linear.z = 0
         twist.angular.x = 0

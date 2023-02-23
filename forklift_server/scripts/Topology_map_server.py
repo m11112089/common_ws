@@ -1,4 +1,5 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
+# -*- coding: utf-8 -*-
 import rospy
 import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
@@ -11,15 +12,62 @@ import math
 
 graph={
     "v1":{"v2":4},
-    "v2":{"v3":2},
-    "v3":{"v4":2, "v2":4},
-    "v4":{"v3":4}
+    "v2":{"v3":4},
+    "v3":{"v4":4},
+    "v4":{"v5":4},
+    "v5":{"v6":4},
+    "v6":{"v7":4},
+    "v7":{"v8":4},
+    "v8":{"v9":4},
+    "v9":{"v10":4},
+    "v10":{"v11":4},
+    "v11":{"v12":4},
+    "v12":{"v13":4},
+    "v13":{"v14":4},
+    "v14": {"v15":1, "v20":16},
+    "v15": {"v16":2},
+    "v16": {"v17":1},
+    "v17": {"v18":1},
+    "v18": {"v19":4},
+    "v19": {"v14":4},
+    "v20": {"v21":4},
+    "v21": {"v22":4},
+    "v22": {"v23":4},
+    "v23": {"v24":4},
+    "v24": {"v25":4},
+    "v25": {"v26":4},
+    "v26": {"v27":4},
+    "v27": {"v15":4}
 }
 waypoints = {
-    "v1": [1.51, -1.61, 0.0, 1.0],
-    "v2": [1.51, -1.61, 0.707, 0.707],
-    "v3": [1.62, 1.35, 0.707, 0.707],
-    "v4": [1.62, 1.35, 0.0, 1.0]
+    "v1": [9.713,-0.352,0.000,1.000],
+    "v2": [9.713,-0.352,0.649,0.761],
+    "v3": [10.318,7.797,0.707,0.707],
+    "v4": [10.489,13.161,0.705,0.710],
+    "v5": [10.489,13.161,0.143,1.000],
+    "v6": [13.154,13.272,0.000,1.000],
+    "v7": [13.154,13.272,0.659,0.752],
+    "v8": [13.282,19.007,0.707,0.707],
+    "v9": [13.152,29.848,0.688,0.725],
+    # "v9": [13.133,24.464,0.697,0.717],
+    "v10": [13.133,24.464,1.000,0.000],
+    "v11": [12.098, 24.788,1.000,0.000],
+    "v12": [12.098, 24.788,0.707,0.707],
+    # "v13": []
+    "v14": [12.228,34.329,0.707,0.707],
+    "v15": [12.228,34.329,0,1],
+    "v16": [13.882,34.377,0,1],
+    "v17": [13.882,34.377,-0.707,0.707],
+    "v18": [13.882,34.377,1,0.01],
+    "v19": [12.228,34.329,1,0.01],
+    "v20": [11.875,47.021,0.696,0.718],
+    "v21": [11.875,47.021,0,1],
+    "v22": [13.896,47.083,0,1],
+    "v23": [13.896,47.083,0.697,0.717],
+    "v24": [13.896,47.083,1,0],
+    "v25": [11.875,47.021,1,0],
+    "v26": [11.875,47.021,-0.707,0.707],
+    "v27": [12.228,34.329,-0.707,0.707]
 }
 
 class TopologyMap():
@@ -27,18 +75,18 @@ class TopologyMap():
         self.start = input("輸入起始點(v1~v...): ")
 
     def path(self, goal):
-        end = self.find_point(goal)
-        print("{}到{}的路径:".format(self.start, end))
+        # end = self.find_point(goal)
+        print("{}到{}的路径:".format(self.start, goal))
         self.parent, self.distance=self.dijkstra(graph,self.start)
-        path=self.distance_path(graph,self.start,end)
-        self.start = end
+        path=self.distance_path(graph,self.start,goal)
+        self.start = goal
         return path
 
-    def find_point(self, goal):
-        x, y, z, w = goal.goal.pose.position.x, goal.goal.pose.position.y, goal.goal.pose.orientation.z, goal.goal.pose.orientation.w
-        for i in waypoints:
-            if x == waypoints[i][0] and y == waypoints[i][1] and z == waypoints[i][2] and w == waypoints[i][3]:
-                return i
+    # def find_point(self, goal):
+    #     x, y, z, w = goal.goal.pose.position.x, goal.goal.pose.position.y, goal.goal.pose.orientation.z, goal.goal.pose.orientation.w
+    #     for i in waypoints:
+    #         if x == waypoints[i][0] and y == waypoints[i][1] and z == waypoints[i][2] and w == waypoints[i][3]:
+    #             return i
 
     # 初始化起点的距离  到自身为零 到其他节点为无穷大
     def init_distance(self, graph,s): #传入图像 和起点
@@ -99,6 +147,7 @@ class Navigation():
         goal.target_pose.pose.orientation.w = w
 
         self.client.send_goal(goal)
+        print("Navigation to", goal)
         wait = self.client.wait_for_result()
 
         if not wait:
@@ -111,10 +160,10 @@ class Navigation():
         self.trigger = True
         self.pre_odom = 0.0
         self.odom_pass = 0.0
-
+    
     def cbGetRobotOdom(self, msg):
-        rz, rw = msg.pose.pose.orientation.z, msg.pose.pose.orientation.w
-        yaw_r = math.atan2(2 * rw * rz, rw * rw - rz * rz)
+        self.rz, self.rw = msg.pose.pose.orientation.z, msg.pose.pose.orientation.w
+        yaw_r = math.atan2(2 * self.rw * self.rz, self.rw * self.rw - self.rz * self.rz)
         if(yaw_r < 0):
             yaw_r = yaw_r + 2 * math.pi
 
@@ -128,13 +177,13 @@ class Navigation():
             self.odom_pass = self.odom_pass + yaw_r - self.pre_odom
         self.pre_odom = yaw_r
 
-    def self_spin(self, z1, w1, z2, w2):
+    def self_spin(self, z2, w2):
         # rospy.INFO('self_spin')
         self.trigger = False       
         self.odom_pass = 0.0
         rospy.sleep(0.1)
 
-        yaw_1 = math.atan2(2 * w1 * z1, w1 * w1 - z1 * z1)
+        yaw_1 = math.atan2(2 * self.rw * self.rz, self.rw * self.rw - self.rz * self.rz)
         if(yaw_1 < 0):
             yaw_1 = yaw_1 + 2 * math.pi
         # print('yaw_1 = ', yaw_1)
@@ -154,9 +203,18 @@ class Navigation():
         while(abs(self.odom_pass) < abs(desire_angle)):
             # print("odom_pass", self.odom_pass*180/math.pi)
             if(desire_angle >= 0):
-                speed.angular.z = 0.3
+                speed.angular.z = (desire_angle-self.odom_pass)*0.5
             elif(desire_angle <= 0):
+                speed.angular.z = (desire_angle-self.odom_pass)*0.5
+
+            if speed.angular.z > 0.3:
+                speed.angular.z = 0.3
+            elif speed.angular.z < -0.3:
                 speed.angular.z = -0.3
+            elif speed.angular.z > -0.1 and speed.angular.z < 0:
+                speed.angular.z = -0.1
+            elif speed.angular.z < 0.1 and speed.angular.z > 0:
+                speed.angular.z = 0.1
             self.cmd_pub.publish(speed)
             rospy.sleep(0.01)
         
@@ -178,15 +236,14 @@ class TopologyMapAction():
 
     def execute_cb(self, msg):
         rospy.loginfo('TopologyMap receive command : %s' % (msg))
-        
-        path = self.TopologyMap.path(msg)
+        path = self.TopologyMap.path(msg.goal)
         print(path)
         for i in range(len(path)):
-            
+            rospy.sleep(1.0)
             if(i > 0 and (waypoints[path[i]][0] == waypoints[path[i-1]][0] and waypoints[path[i]][1] == waypoints[path[i-1]][1])):
                 rospy.loginfo('self_spin from %s to %s' % (path[i-1], path[i]))
-                rospy.loginfo('self_spin from %s to %s' % (path[i-1], path[i]))
-                self.Navigation.self_spin(waypoints[path[i-1]][2], waypoints[path[i-1]][3], waypoints[path[i]][2], waypoints[path[i]][3])
+                # rospy.loginfo('self_spin from %s to %s' % (path[i-1], path[i]))
+                self.Navigation.self_spin(waypoints[path[i]][2], waypoints[path[i]][3])
                 i = i + 1
                 continue
             else:
@@ -199,6 +256,6 @@ class TopologyMapAction():
         self._as.set_succeeded(self._result)
 
 if __name__ == '__main__':
-    rospy.init_node('TopologyMap_server')
+    rospy.init_node('TopologyMap')
     server = TopologyMapAction(rospy.get_name())
     rospy.spin()
